@@ -3,6 +3,8 @@ use bevy::utils::hashbrown::HashMap;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use enum_iterator::{all, Sequence};
 
+use crate::utils::StateLocalSpawner;
+
 const MAX_ANGULAR_VELOCITY: f32 = 15.0;
 const ARM_WIDTH: f32 = 10.0;
 const EYE_RADIUS: f32 = 5.0;
@@ -131,7 +133,7 @@ pub struct Grounded(u32);
 
 impl Creature {
     pub fn spawn(
-        commands: &mut Commands,
+        commands: &mut StateLocalSpawner<'_, '_>,
         x: f32,
         y: f32,
         species: Species,

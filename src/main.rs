@@ -1,6 +1,7 @@
 mod creature;
 mod levels;
 mod objects;
+mod utils;
 
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
