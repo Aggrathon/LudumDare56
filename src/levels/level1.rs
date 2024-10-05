@@ -57,7 +57,7 @@ pub fn load_level(mut commands: Commands, assets: Res<CreatureAssets>) {
         Collider::rectangle(50.0, 50.0),
     ));
 
-    let d = 25.0;
+    let d = 30.0;
     commands.spawn(Creature::spawn(-d * 3.0, 0.0, Species::Normal, &assets));
     commands.spawn(Creature::spawn(-d * 1.0, 0.0, Species::Explosive, &assets));
     commands.spawn(Creature::spawn(d * 1.0, 0.0, Species::Bouncy, &assets));
