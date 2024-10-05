@@ -5,6 +5,7 @@ use enum_iterator::{all, Sequence};
 
 const MAX_ANGULAR_VELOCITY: f32 = 15.0;
 const ARM_WIDTH: f32 = 10.0;
+const EYE_RADIUS: f32 = 5.0;
 
 pub struct CreaturePlugin;
 
@@ -90,6 +91,8 @@ impl Species {
 #[derive(Resource)]
 pub struct CreatureAssets {
     map: HashMap<Species, (Handle<Mesh>, Handle<ColorMaterial>)>,
+    eye_mesh: Handle<Mesh>,
+    eye_material: Handle<ColorMaterial>,
 }
 
 #[derive(Default, Reflect, GizmoConfigGroup)]
@@ -113,6 +116,8 @@ fn setup(
                 )
             })
             .collect(),
+        eye_mesh: meshes.add(Circle::new(EYE_RADIUS)),
+        eye_material: materials.add(Color::WHITE),
     };
     commands.insert_resource(assets);
     config_store.config_mut::<ArmGizmos>().0.line_width = ARM_WIDTH;
@@ -125,27 +130,55 @@ pub struct Creature(Species);
 pub struct Grounded(u32);
 
 impl Creature {
-    pub fn spawn(x: f32, y: f32, species: Species, assets: &Res<CreatureAssets>) -> impl Bundle {
-        // TODO add eyes
+    pub fn spawn(
+        commands: &mut Commands,
+        x: f32,
+        y: f32,
+        species: Species,
+        assets: &Res<CreatureAssets>,
+    ) {
         let (mesh, material) = assets
             .map
             .get(&species)
             .expect("All creature assets should have been initialised in the setup");
-        (
-            MaterialMesh2dBundle {
-                mesh: mesh.clone().into(),
-                material: material.clone(),
-                transform: Transform::from_xyz(x, y, 0.0),
-                ..default()
-            },
-            RigidBody::Dynamic,
-            ColliderDensity(species.density()),
-            Collider::circle(species.radius()),
-            Restitution::new(species.bounciness()),
-            Friction::new(1.1).with_dynamic_coefficient(0.9),
-            Creature(species),
-            Grounded(0),
-        )
+        commands
+            .spawn((
+                MaterialMesh2dBundle {
+                    mesh: mesh.clone().into(),
+                    material: material.clone(),
+                    transform: Transform::from_xyz(x, y, 0.0),
+                    ..default()
+                },
+                RigidBody::Dynamic,
+                ColliderDensity(species.density()),
+                Collider::circle(species.radius()),
+                Restitution::new(species.bounciness()),
+                Friction::new(1.1).with_dynamic_coefficient(0.9),
+                Creature(species),
+                Grounded(0),
+            ))
+            .with_children(|cb| {
+                cb.spawn(MaterialMesh2dBundle {
+                    mesh: assets.eye_mesh.clone().into(),
+                    material: assets.eye_material.clone(),
+                    transform: Transform::from_xyz(
+                        species.radius() * 0.4,
+                        species.radius() * 0.4,
+                        1.0,
+                    ),
+                    ..default()
+                });
+                cb.spawn(MaterialMesh2dBundle {
+                    mesh: assets.eye_mesh.clone().into(),
+                    material: assets.eye_material.clone(),
+                    transform: Transform::from_xyz(
+                        -species.radius() * 0.4,
+                        species.radius() * 0.4,
+                        1.0,
+                    ),
+                    ..default()
+                });
+            });
     }
 }
 
@@ -291,8 +324,8 @@ fn arms(
                 let dir = (v2 - v1).normalize();
 
                 gizmos.line_gradient_2d(
-                    v1 + dir * (c1.0.radius() * 0.5),
-                    v2 - dir * (c2.0.radius() * 0.5),
+                    v1 + dir * (c1.0.radius() * 0.75),
+                    v2 - dir * (c2.0.radius() * 0.75),
                     c1.0.color(),
                     c2.0.color(),
                 );

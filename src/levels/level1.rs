@@ -58,8 +58,8 @@ pub fn load_level(mut commands: Commands, assets: Res<CreatureAssets>) {
     ));
 
     let d = 30.0;
-    commands.spawn(Creature::spawn(-d * 3.0, 0.0, Species::Normal, &assets));
-    commands.spawn(Creature::spawn(-d * 1.0, 0.0, Species::Explosive, &assets));
-    commands.spawn(Creature::spawn(d * 1.0, 0.0, Species::Bouncy, &assets));
-    commands.spawn(Creature::spawn(d * 3.0, 0.0, Species::Heavy, &assets));
+    Creature::spawn(&mut commands, -d * 3.0, 0.0, Species::Normal, &assets);
+    Creature::spawn(&mut commands, -d * 1.0, 0.0, Species::Explosive, &assets);
+    Creature::spawn(&mut commands, d * 1.0, 0.0, Species::Bouncy, &assets);
+    Creature::spawn(&mut commands, d * 3.0, 0.0, Species::Heavy, &assets);
 }

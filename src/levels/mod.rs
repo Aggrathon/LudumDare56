@@ -21,5 +21,8 @@ pub enum Level {
 }
 
 pub fn setup(mut state: ResMut<NextState<Level>>) {
+    // TODO Menu
+    // TODO Tutorials
+    // TODO Levels
     state.set(Level::Level1);
 }
