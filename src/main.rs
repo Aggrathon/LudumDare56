@@ -15,7 +15,7 @@ fn main() {
             levels::LevelPlugin,
             objects::ObjectPlugin,
         ))
-        .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.2)))
+        .insert_resource(ClearColor(Color::srgb(0.15, 0.15, 0.25)))
         .insert_resource(Gravity(Vector::NEG_Y * 9.81 * 50.0))
         .run();
 }

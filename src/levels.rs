@@ -1,5 +1,7 @@
 use crate::creature::{Creature, CreatureAssets, Species};
-use crate::objects::{plank, spawn_exit, spawn_pressure_plate, wall, PressurePlateEvent};
+use crate::objects::{
+    plank, spawn_exit, spawn_pressure_plate, spawn_sign, wall, PressurePlateEvent, TextStyles,
+};
 use crate::utils::{IdentityTransitionsPlugin, StateLocalPlugin, StateLocalSpawner};
 use bevy::prelude::*;
 use enum_iterator::Sequence;
@@ -34,7 +36,7 @@ fn setup(mut state: ResMut<NextState<Level>>) {
     state.set(Level::TestLevel);
 }
 
-fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>) {
+fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
     let mut commands = StateLocalSpawner(commands);
     commands.spawn(Camera2dBundle::default());
 
@@ -50,6 +52,14 @@ fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>) {
 
     spawn_exit(&mut commands, 0, Vec2::new(275.0, 10.0), 40.0, 0.0);
     spawn_pressure_plate(&mut commands, 1, Vec2::new(-275.0, -275.0), 40.0, 0.0);
+
+    spawn_sign(
+        &mut commands,
+        "Press N to go to the next level",
+        Vec2::new(-120., -20.),
+        Vec2::new(120., -60.),
+        text_styles,
+    );
 
     let d = 30.0;
     Creature::spawn(&mut commands, -d * 3.0, 0.0, Species::Normal, &assets);
