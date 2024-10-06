@@ -1,6 +1,6 @@
-use crate::creature::{Creature, CreatureAssets, Species};
+use crate::creature::{Creature, CreatureAssets};
 use crate::objects::{
-    background, camera, plank, spawn_exit, spawn_glass, spawn_pressure_plate, wall,
+    background, camera, door, plank, spawn_exit, spawn_glass, spawn_pressure_plate, wall,
     PressurePlateEvent,
 };
 use crate::ui::{spawn_button, spawn_sign, Signal, TextStyles};
@@ -24,6 +24,8 @@ impl Plugin for LevelPlugin {
         .add_systems(OnEnter(Level::Tutorial1), setup_tutorial1)
         .add_systems(OnEnter(Level::Tutorial2), setup_tutorial2)
         .add_systems(OnEnter(Level::Tutorial3), setup_tutorial3)
+        .add_systems(OnEnter(Level::Tutorial4), setup_tutorial4)
+        .add_systems(OnEnter(Level::Tutorial5), setup_tutorial5)
         .add_systems(Update, (handle_input, level_events))
         .insert_state(Level::Loading);
     }
@@ -38,6 +40,8 @@ pub enum Level {
     Tutorial1,
     Tutorial2,
     Tutorial3,
+    Tutorial4,
+    Tutorial5,
     // TODO Tutorials
     // TODO Levels
 }
@@ -81,18 +85,14 @@ fn level_events(
                     next_state.set(*state.get())
                 }
             }
-            Signal::Custom(i) => {
-                eprintln!("Pressure plate event not handled: {} = {}", i, pressed);
-            }
+            _ => {}
         }
     }
     for signal in signals.read() {
         match signal {
             Signal::NextLevel => next_state.set(state.get().next().unwrap_or_default()),
             Signal::RestartLevel => next_state.set(*state.get()),
-            Signal::Custom(i) => {
-                eprintln!("Signal not handled: {}", i);
-            }
+            _ => {}
         }
     }
 }
@@ -159,44 +159,44 @@ fn setup_main_menu(commands: Commands, text_style: Res<TextStyles>, assets: Res<
         -2.,
     ));
 
-    let e1 = Creature::spawn(&mut commands, -60.0, 50.0, Species::Normal, &assets);
+    let e1 = Creature::spawn(&mut commands, -60.0, 50.0, Creature::Normal, true, &assets);
     let e2 = commands
         .spawn((
-            TransformBundle::from_transform(Transform::from_xyz(-40.0, -40.0, 1.0)),
+            TransformBundle::from_transform(Transform::from_xyz(-60.0, -60.0, 1.0)),
             RigidBody::Static,
         ))
         .id();
-    commands.spawn(FixedJoint::new(e1, e2).with_compliance(0.001));
+    commands.spawn(FixedJoint::new(e1, e2).with_compliance(0.0001));
     commands.spawn(plank(Vec2::new(-100.0, -75.0), Vec2::new(-0.0, -75.0)));
 }
 
 fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
-    let mut commands = StateLocalSpawner(commands);
-    commands.spawn(camera());
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
 
-    commands.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
-    commands.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
-    commands.spawn(plank(Vec2::new(300.0, 10.0), Vec2::new(450.0, -10.0)));
-    commands.spawn(plank(Vec2::new(-300.0, 10.0), Vec2::new(-450.0, -10.0)));
-    commands.spawn(plank(Vec2::new(250.0, 10.0), Vec2::new(300.0, 10.0)));
-    commands.spawn(plank(Vec2::new(-250.0, 10.0), Vec2::new(-300.0, 10.0)));
+    cmd.spawn(plank(Vec2::new(300.0, 10.0), Vec2::new(450.0, -10.0)));
+    cmd.spawn(plank(Vec2::new(-300.0, 10.0), Vec2::new(-450.0, -10.0)));
+    cmd.spawn(plank(Vec2::new(250.0, 10.0), Vec2::new(300.0, 10.0)));
+    cmd.spawn(plank(Vec2::new(-250.0, 10.0), Vec2::new(-300.0, 10.0)));
 
-    spawn_exit(&mut commands, Vec2::new(275.0, 10.0), 40.0, 0.0);
+    spawn_exit(&mut cmd, Vec2::new(275.0, 10.0), 60.0, 0.0);
     spawn_pressure_plate(
-        &mut commands,
+        &mut cmd,
         Signal::Custom(0),
         Vec2::new(-275.0, -275.0),
-        40.0,
+        60.0,
         0.0,
     );
 
-    spawn_glass(&mut commands, Vec2::new(250.0, -275.), 80.);
+    spawn_glass(&mut cmd, Vec2::new(250.0, -275.), 80.);
 
     spawn_sign(
-        &mut commands,
+        &mut cmd,
         "Press N to go to the next level",
         Vec2::new(-150., -20.),
         Vec2::new(150., -60.),
@@ -204,92 +204,166 @@ fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>, text_styles
     );
 
     let d = 30.0;
-    Creature::spawn(&mut commands, -d * 3.0, 0.0, Species::Normal, &assets);
-    Creature::spawn(&mut commands, -d * 1.0, 0.0, Species::Explosive, &assets);
-    Creature::spawn(&mut commands, d * 1.0, 0.0, Species::Bouncy, &assets);
-    Creature::spawn(&mut commands, d * 3.0, 0.0, Species::Heavy, &assets);
+    Creature::spawn(&mut cmd, -d * 3.0, 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, -d * 1.0, 0.0, Creature::Explosive, false, &assets);
+    Creature::spawn(&mut cmd, d * 1.0, 0.0, Creature::Bouncy, false, &assets);
+    Creature::spawn(&mut cmd, d * 3.0, 0.0, Creature::Heavy, false, &assets);
 }
 
 fn setup_tutorial1(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
-    let mut commands = StateLocalSpawner(commands);
-    commands.spawn(camera());
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
 
-    commands.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
-    commands.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
-    spawn_exit(&mut commands, Vec2::new(275.0, -275.0), 40.0, 0.0);
+    spawn_exit(&mut cmd, Vec2::new(275.0, -275.0), 60.0, 0.0);
 
     spawn_sign(
-        &mut commands,
+        &mut cmd,
         "Tony dreams of a break\nfrom the dark and the grey.",
         Vec2::new(-150., 100.),
         Vec2::new(150., 20.),
         &text_styles,
     );
     spawn_sign(
-        &mut commands,
-        "Use A / D / ← / → to roll.",
+        &mut cmd,
+        "Press A / D / ← / → to roll.",
         Vec2::new(-150., -20.),
         Vec2::new(150., -60.),
         &text_styles,
     );
-    Creature::spawn(&mut commands, -150., 0.0, Species::Normal, &assets);
+    Creature::spawn(&mut cmd, -150., 0.0, Creature::Normal, true, &assets);
 }
 
 fn setup_tutorial2(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
-    let mut commands = StateLocalSpawner(commands);
-    commands.spawn(camera());
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
 
-    commands.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
-    commands.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
-    commands.spawn(plank(Vec2::new(150.0, -150.0), Vec2::new(300.0, -150.0)));
-    commands.spawn(plank(Vec2::new(300.0, -50.0), Vec2::new(450.0, -50.0)));
-    spawn_exit(&mut commands, Vec2::new(400.0, -50.0), 40.0, 0.0);
+    cmd.spawn(plank(Vec2::new(150.0, -150.0), Vec2::new(300.0, -150.0)));
+    cmd.spawn(plank(Vec2::new(300.0, -50.0), Vec2::new(450.0, -50.0)));
+    spawn_exit(&mut cmd, Vec2::new(400.0, -50.0), 60.0, 0.0);
 
     spawn_sign(
-        &mut commands,
+        &mut cmd,
         "He needs a holiday, preferrably\nsomewhere bright and warm!",
         Vec2::new(-150., 100.),
         Vec2::new(150., 20.),
         &text_styles,
     );
     spawn_sign(
-        &mut commands,
-        "Use W / ↑ to jump.",
+        &mut cmd,
+        "Press W / ↑ to jump.",
         Vec2::new(-150., -20.),
         Vec2::new(150., -60.),
         &text_styles,
     );
-    Creature::spawn(&mut commands, -150., 0.0, Species::Normal, &assets);
+    Creature::spawn(&mut cmd, -150., 0.0, Creature::Normal, true, &assets);
 }
 
 fn setup_tutorial3(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
-    let mut commands = StateLocalSpawner(commands);
-    commands.spawn(camera());
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
 
-    commands.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
-    commands.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
-    commands.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
-    commands.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -175.0)));
-    spawn_glass(&mut commands, Vec2::new(200.0, -275.), 100.);
+    cmd.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -175.0)));
+    spawn_glass(&mut cmd, Vec2::new(200.0, -275.), 100.);
 
-    spawn_exit(&mut commands, Vec2::new(275.0, -275.0), 40.0, 0.0);
+    spawn_exit(&mut cmd, Vec2::new(275.0, -275.0), 60.0, 0.0);
 
     spawn_sign(
-        &mut commands,
+        &mut cmd,
         "Ricky has always been a good\nfriend, maybe he can help?",
         Vec2::new(-150., 100.),
         Vec2::new(150., 20.),
         &text_styles,
     );
+    spawn_sign(
+        &mut cmd,
+        "Press R to restart.",
+        Vec2::new(-150., -20.),
+        Vec2::new(150., -60.),
+        &text_styles,
+    );
 
-    Creature::spawn(&mut commands, -50., 0.0, Species::Normal, &assets);
-    Creature::spawn(&mut commands, -250., 0.0, Species::Heavy, &assets);
+    Creature::spawn(&mut cmd, -50., 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, -250., 0.0, Creature::Heavy, false, &assets);
+}
+
+fn setup_tutorial4(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
+
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    cmd.spawn(wall(Vec2::new(175.0, -100.0), Vec2::new(225.0, -275.0)));
+
+    spawn_exit(&mut cmd, Vec2::new(275.0, -275.0), 60.0, 0.0);
+
+    spawn_sign(
+        &mut cmd,
+        "Issy has a hot temperament,\nwhich is scary at times.",
+        Vec2::new(-150., 120.),
+        Vec2::new(150., 60.),
+        &text_styles,
+    );
+    spawn_sign(
+        &mut cmd,
+        "Press S / ↓ to shove\neveryone away.",
+        Vec2::new(-150., 0.),
+        Vec2::new(150., -80.),
+        &text_styles,
+    );
+
+    Creature::spawn(&mut cmd, -50., 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, -250., 0., Creature::Explosive, false, &assets);
+}
+
+fn setup_tutorial5(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
+
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    cmd.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-175.0, 275.0), Vec2::new(-225.0, -175.0)));
+    cmd.spawn(door(0, Vec2::new(-200., -275.), 100.));
+
+    spawn_pressure_plate(&mut cmd, Signal::Door(0), Vec2::new(350., -275.), 60., 0.0);
+    spawn_exit(&mut cmd, Vec2::new(-350.0, -275.0), 60.0, 0.0);
+
+    spawn_sign(
+        &mut cmd,
+        "Elly is eager to help, but\nrequires detailed instructions.",
+        Vec2::new(-150., 100.),
+        Vec2::new(150., 20.),
+        &text_styles,
+    );
+    spawn_sign(
+        &mut cmd,
+        "Press Space to switch creature.",
+        Vec2::new(-150., -20.),
+        Vec2::new(150., -60.),
+        &text_styles,
+    );
+
+    Creature::spawn(&mut cmd, 0., 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, 250., 0., Creature::Bouncy, false, &assets);
 }

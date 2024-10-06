@@ -26,6 +26,8 @@ pub enum Signal {
     NextLevel,
     #[expect(dead_code)]
     RestartLevel,
+    Door(u16),
+    #[expect(dead_code)]
     Custom(u16),
 }
 

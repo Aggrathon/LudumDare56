@@ -1,19 +1,22 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::creature::Creature;
+use crate::creature::{Creature, MainCreature};
 use crate::ui::Signal;
 use crate::utils::StateLocalSpawner;
 
 const PLANK_THICKNESS: f32 = 25.0;
 const SENSOR_THICKNESS: f32 = 6.0;
-const DOOR_HEIGHT: f32 = 50.0;
+const EXIT_HEIGHT: f32 = 70.0;
 const GLASS_THICKNESS: f32 = 8.0;
+const DOOR_THICKNESS: f32 = 12.0;
+const CAMERA_SPEED: f32 = 200.0;
 
 const STATIC_COLOR: Color = Color::srgb(0.8, 0.75, 1.0);
 const SENSOR_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
-const DOOR_COLOR: Color = Color::srgba(1.0, 1.0, 0.0, 0.7);
+const EXIT_COLOR: Color = Color::srgba(1.0, 1.0, 0.0, 0.7);
 const GLASS_COLOR: Color = Color::srgba(0.7, 0.75, 1.0, 0.7);
+const DOOR_COLOR: Color = Color::srgb(0.35, 0.4, 0.3);
 
 pub struct ObjectPlugin;
 
@@ -26,6 +29,7 @@ impl Plugin for ObjectPlugin {
                 on_pressure_exit,
                 on_pressure_event,
                 glass_collision,
+                camera_follow,
             ),
         )
         .add_event::<PressurePlateEvent>();
@@ -40,6 +44,29 @@ pub fn camera() -> impl Bundle {
         },
         transform: Transform::from_xyz(0.0, 0.0, 10.0),
         ..default()
+    }
+}
+
+fn camera_follow(
+    time: Res<Time>,
+    mut camera: Query<(&mut Transform, &GlobalTransform, &Camera)>,
+    target: Query<&GlobalTransform, With<MainCreature>>,
+) {
+    if let Ok((mut transform, gt, camera)) = camera.get_single_mut() {
+        if let Ok(creature) = target.get_single() {
+            if let Some(ndc) = camera.world_to_ndc(gt, creature.translation()) {
+                if ndc.x < -0.4 {
+                    transform.translation.x -= time.delta_seconds() * CAMERA_SPEED;
+                } else if ndc.x > 0.4 {
+                    transform.translation.x += time.delta_seconds() * CAMERA_SPEED;
+                }
+                if ndc.y < -0.8 {
+                    transform.translation.y -= time.delta_seconds() * CAMERA_SPEED;
+                } else if ndc.y > 0.8 {
+                    transform.translation.y += time.delta_seconds() * CAMERA_SPEED;
+                }
+            }
+        }
     }
 }
 
@@ -162,6 +189,31 @@ pub fn background(
 }
 
 #[derive(Component, Clone, Copy)]
+pub struct Door(u16);
+
+pub fn door(number: u16, bottom: Vec2, height: f32) -> impl Bundle {
+    (
+        SpriteBundle {
+            sprite: Sprite {
+                color: DOOR_COLOR,
+                custom_size: Some(Vec2::ONE),
+                ..default()
+            },
+            transform: Transform::from_translation(Vec3::new(
+                bottom.x,
+                bottom.y + height * 0.5,
+                0.0,
+            ))
+            .with_scale(Vec3::new(DOOR_THICKNESS, height, 1.0)),
+            ..default()
+        },
+        RigidBody::Kinematic,
+        Collider::rectangle(1.0, 1.0),
+        Door(number),
+    )
+}
+
+#[derive(Component, Clone, Copy)]
 pub struct PressurePlate(u16, Signal);
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -216,12 +268,12 @@ pub fn spawn_exit(
     commands.entity(e).with_children(|cb| {
         cb.spawn((SpriteBundle {
             sprite: Sprite {
-                color: DOOR_COLOR,
+                color: EXIT_COLOR,
                 custom_size: Some(Vec2::ONE),
                 ..default()
             },
-            transform: Transform::from_xyz(0.0, -0.5 + DOOR_HEIGHT / SENSOR_THICKNESS * 0.5, -0.1)
-                .with_scale(Vec3::new(0.9, DOOR_HEIGHT / SENSOR_THICKNESS, 1.0)),
+            transform: Transform::from_xyz(0.0, -0.5 + EXIT_HEIGHT / SENSOR_THICKNESS * 0.5, -0.1)
+                .with_scale(Vec3::new(0.9, EXIT_HEIGHT / SENSOR_THICKNESS, 1.0)),
             ..default()
         },));
     });
@@ -278,14 +330,29 @@ fn on_pressure_exit(
 }
 
 fn on_pressure_event(
+    mut commands: Commands,
     mut event: EventReader<PressurePlateEvent>,
     children: Query<&Children>,
     mut transforms: Query<&mut Transform>,
+    mut doors: Query<(Entity, &Door, &mut Visibility)>,
 ) {
-    for PressurePlateEvent(entity, _, pressed) in event.read() {
+    for PressurePlateEvent(entity, signal, pressed) in event.read() {
         for child in children.iter_descendants(*entity) {
             if let Ok(mut t) = transforms.get_mut(child) {
                 t.translation.y = if *pressed { -0.75 } else { 0.0 };
+            }
+            if let Signal::Door(i) = signal {
+                for (e, door, mut v) in doors.iter_mut() {
+                    if door.0 == *i {
+                        if *pressed {
+                            commands.entity(e).insert(Sensor {});
+                            *v = Visibility::Hidden;
+                        } else {
+                            commands.entity(e).remove::<Sensor>();
+                            *v = Visibility::Inherited;
+                        }
+                    }
+                }
             }
         }
         // TODO click sound
