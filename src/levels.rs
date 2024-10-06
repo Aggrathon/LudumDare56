@@ -1,5 +1,5 @@
 use crate::creature::{Creature, CreatureAssets, Species};
-use crate::objects::{plank, spawn_pressure_plate, wall};
+use crate::objects::{plank, spawn_exit, spawn_pressure_plate, wall, PressurePlateEvent};
 use crate::utils::{IdentityTransitionsPlugin, StateLocalPlugin, StateLocalSpawner};
 use bevy::prelude::*;
 use enum_iterator::Sequence;
@@ -14,26 +14,27 @@ impl Plugin for LevelPlugin {
         ))
         .init_state::<Level>()
         .add_systems(Startup, setup)
-        .add_systems(OnEnter(Level::Level1), test_level)
+        .add_systems(OnEnter(Level::TestLevel), setup_test_level)
+        .add_systems(Update, run_test_level.run_if(in_state(Level::TestLevel)))
         .add_systems(Update, input);
     }
 }
 
 #[derive(Clone, Copy, Default, States, Debug, Hash, PartialEq, Eq, Sequence)]
 pub enum Level {
+    TestLevel,
     #[default]
     Menu,
-    Level1,
 }
 
 fn setup(mut state: ResMut<NextState<Level>>) {
     // TODO Menu
     // TODO Tutorials
     // TODO Levels
-    state.set(Level::Level1);
+    state.set(Level::TestLevel);
 }
 
-fn test_level(commands: Commands, assets: Res<CreatureAssets>) {
+fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>) {
     let mut commands = StateLocalSpawner(commands);
     commands.spawn(Camera2dBundle::default());
 
@@ -47,14 +48,33 @@ fn test_level(commands: Commands, assets: Res<CreatureAssets>) {
     commands.spawn(plank(Vec2::new(250.0, 10.0), Vec2::new(300.0, 10.0)));
     commands.spawn(plank(Vec2::new(-250.0, 10.0), Vec2::new(-300.0, 10.0)));
 
-    spawn_pressure_plate(&mut commands, Vec2::new(275.0, 10.0), 40.0, 0.0);
-    spawn_pressure_plate(&mut commands, Vec2::new(-275.0, -275.0), 40.0, 0.0);
+    spawn_exit(&mut commands, 0, Vec2::new(275.0, 10.0), 40.0, 0.0);
+    spawn_pressure_plate(&mut commands, 1, Vec2::new(-275.0, -275.0), 40.0, 0.0);
 
     let d = 30.0;
     Creature::spawn(&mut commands, -d * 3.0, 0.0, Species::Normal, &assets);
     Creature::spawn(&mut commands, -d * 1.0, 0.0, Species::Explosive, &assets);
     Creature::spawn(&mut commands, d * 1.0, 0.0, Species::Bouncy, &assets);
     Creature::spawn(&mut commands, d * 3.0, 0.0, Species::Heavy, &assets);
+}
+
+fn run_test_level(
+    mut event: EventReader<PressurePlateEvent>,
+    mut next_state: ResMut<NextState<Level>>,
+    state: Res<State<Level>>,
+) {
+    for PressurePlateEvent(_, signal, pressed) in event.read() {
+        match signal {
+            0 => {
+                if *pressed {
+                    next_state.set(state.get().next().unwrap_or_default())
+                }
+            }
+            i => {
+                eprintln!("Pressure plate event not handled: {}", i);
+            }
+        }
+    }
 }
 
 fn input(

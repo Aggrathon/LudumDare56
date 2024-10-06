@@ -65,6 +65,10 @@ impl<'w, 's> StateLocalSpawner<'w, 's> {
     pub fn spawn<B: Bundle>(&mut self, bundle: B) -> EntityCommands {
         self.0.spawn((StateLocal {}, bundle))
     }
+
+    pub fn entity(&mut self, entity: Entity) -> EntityCommands {
+        self.0.entity(entity)
+    }
 }
 
 #[derive(Default)]

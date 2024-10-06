@@ -6,9 +6,11 @@ use crate::utils::StateLocalSpawner;
 
 const PLANK_THICKNESS: f32 = 25.0;
 const SENSOR_THICKNESS: f32 = 6.0;
+const DOOR_HEIGHT: f32 = 50.0;
 
 const STATIC_COLOR: Color = Color::srgb(0.8, 0.75, 1.0);
 const SENSOR_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
+const DOOR_COLOR: Color = Color::srgba(1.0, 1.0, 0.0, 0.6);
 
 pub struct ObjectPlugin;
 
@@ -63,17 +65,18 @@ pub fn rectangle(center: Vec2, size: Vec2, rotation: f32) -> impl Bundle {
 }
 
 #[derive(Component, Clone, Copy)]
-pub struct PressurePlate(u32);
+pub struct PressurePlate(u16, u16);
 
 #[derive(Event, Debug, Clone, Copy)]
-struct PressurePlateEvent(Entity, bool);
+pub struct PressurePlateEvent(pub Entity, pub u16, pub bool);
 
 pub fn spawn_pressure_plate(
     commands: &mut StateLocalSpawner<'_, '_>,
+    signal: u16,
     center: Vec2,
     width: f32,
     rotation: f32,
-) {
+) -> Entity {
     commands
         .spawn((
             TransformBundle {
@@ -90,7 +93,7 @@ pub fn spawn_pressure_plate(
             RigidBody::Static,
             Collider::rectangle(1.0, 1.0),
             Sensor,
-            PressurePlate(0),
+            PressurePlate(0, signal),
         ))
         .with_children(|cb| {
             cb.spawn((SpriteBundle {
@@ -102,7 +105,30 @@ pub fn spawn_pressure_plate(
                 transform: Transform::IDENTITY,
                 ..default()
             },));
-        });
+        })
+        .id()
+}
+
+pub fn spawn_exit(
+    commands: &mut StateLocalSpawner<'_, '_>,
+    signal: u16,
+    center: Vec2,
+    width: f32,
+    rotation: f32,
+) {
+    let e = spawn_pressure_plate(commands, signal, center, width, rotation);
+    commands.entity(e).with_children(|cb| {
+        cb.spawn((SpriteBundle {
+            sprite: Sprite {
+                color: DOOR_COLOR,
+                custom_size: Some(Vec2::ONE),
+                ..default()
+            },
+            transform: Transform::from_xyz(0.0, -0.5 + DOOR_HEIGHT / SENSOR_THICKNESS * 0.5, -0.1)
+                .with_scale(Vec3::new(0.9, DOOR_HEIGHT / SENSOR_THICKNESS, 1.0)),
+            ..default()
+        },));
+    });
 }
 
 fn on_pressure_enter(
@@ -116,14 +142,14 @@ fn on_pressure_enter(
             if let Ok(mut plate) = plates.get_mut(*e2) {
                 plate.0 += 1;
                 if plate.0 == 1 {
-                    event.send(PressurePlateEvent(*e2, true));
+                    event.send(PressurePlateEvent(*e2, plate.1, true));
                 }
             }
         } else if creatures.contains(*e2) {
             if let Ok(mut plate) = plates.get_mut(*e1) {
                 plate.0 += 1;
                 if plate.0 == 1 {
-                    event.send(PressurePlateEvent(*e1, true));
+                    event.send(PressurePlateEvent(*e1, plate.1, true));
                 }
             }
         }
@@ -141,14 +167,14 @@ fn on_pressure_exit(
             if let Ok(mut plate) = plates.get_mut(*e2) {
                 plate.0 -= 1;
                 if plate.0 == 0 {
-                    event.send(PressurePlateEvent(*e2, false));
+                    event.send(PressurePlateEvent(*e2, plate.1, false));
                 }
             }
         } else if creatures.contains(*e2) {
             if let Ok(mut plate) = plates.get_mut(*e1) {
                 plate.0 -= 1;
                 if plate.0 == 0 {
-                    event.send(PressurePlateEvent(*e1, false));
+                    event.send(PressurePlateEvent(*e1, plate.1, false));
                 }
             }
         }
@@ -160,7 +186,7 @@ fn on_pressure_event(
     children: Query<&Children>,
     mut transforms: Query<&mut Transform>,
 ) {
-    for PressurePlateEvent(entity, pressed) in event.read() {
+    for PressurePlateEvent(entity, _, pressed) in event.read() {
         for child in children.iter_descendants(*entity) {
             if let Ok(mut t) = transforms.get_mut(child) {
                 t.translation.y = if *pressed { -0.75 } else { 0.0 };
