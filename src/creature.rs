@@ -138,7 +138,7 @@ impl Creature {
         y: f32,
         species: Species,
         assets: &Res<CreatureAssets>,
-    ) {
+    ) -> Entity {
         let (mesh, material) = assets
             .map
             .get(&species)
@@ -180,7 +180,8 @@ impl Creature {
                     ),
                     ..default()
                 });
-            });
+            })
+            .id()
     }
 }
 

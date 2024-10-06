@@ -1,8 +1,8 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
 
 use crate::creature::Creature;
+use crate::ui::Signal;
 use crate::utils::StateLocalSpawner;
 
 const PLANK_THICKNESS: f32 = 25.0;
@@ -12,8 +12,6 @@ const DOOR_HEIGHT: f32 = 50.0;
 const STATIC_COLOR: Color = Color::srgb(0.8, 0.75, 1.0);
 const SENSOR_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
 const DOOR_COLOR: Color = Color::srgba(1.0, 1.0, 0.0, 0.7);
-const SIGN_COLOR: Color = Color::srgb(0.25, 0.25, 0.25);
-const SIGN_COLOR_TEXT: Color = Color::WHITE;
 
 pub struct ObjectPlugin;
 
@@ -23,24 +21,8 @@ impl Plugin for ObjectPlugin {
             Update,
             (on_pressure_enter, on_pressure_exit, on_pressure_event),
         )
-        .add_event::<PressurePlateEvent>()
-        .add_systems(Startup, setup);
+        .add_event::<PressurePlateEvent>();
     }
-}
-
-#[derive(Resource)]
-pub struct TextStyles {
-    sign_text: TextStyle,
-}
-
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(TextStyles {
-        sign_text: TextStyle {
-            font: asset_server.load("fonts/Comfortaa-Regular.ttf"),
-            font_size: 20.0,
-            color: SIGN_COLOR_TEXT,
-        },
-    });
 }
 
 pub fn plank(start: Vec2, end: Vec2) -> impl Bundle {
@@ -83,15 +65,35 @@ pub fn rectangle(center: Vec2, size: Vec2, rotation: f32) -> impl Bundle {
     )
 }
 
+pub fn background(
+    color: Color,
+    topleft: Vec2,
+    bottomright: Vec2,
+    rotation: f32,
+    z: f32,
+) -> impl Bundle {
+    SpriteBundle {
+        sprite: Sprite {
+            color: color,
+            custom_size: Some(Vec2::ONE),
+            ..default()
+        },
+        transform: Transform::from_translation(topleft.midpoint(bottomright).extend(z))
+            .with_scale((bottomright - topleft).abs().extend(1.0))
+            .with_rotation(Quat::from_rotation_z(rotation)),
+        ..default()
+    }
+}
+
 #[derive(Component, Clone, Copy)]
-pub struct PressurePlate(u16, u16);
+pub struct PressurePlate(u16, Signal);
 
 #[derive(Event, Debug, Clone, Copy)]
-pub struct PressurePlateEvent(pub Entity, pub u16, pub bool);
+pub struct PressurePlateEvent(pub Entity, pub Signal, pub bool);
 
 pub fn spawn_pressure_plate(
     commands: &mut StateLocalSpawner<'_, '_>,
-    signal: u16,
+    signal: Signal,
     center: Vec2,
     width: f32,
     rotation: f32,
@@ -130,12 +132,11 @@ pub fn spawn_pressure_plate(
 
 pub fn spawn_exit(
     commands: &mut StateLocalSpawner<'_, '_>,
-    signal: u16,
     center: Vec2,
     width: f32,
     rotation: f32,
 ) {
-    let e = spawn_pressure_plate(commands, signal, center, width, rotation);
+    let e = spawn_pressure_plate(commands, Signal::NextLevel, center, width, rotation);
     commands.entity(e).with_children(|cb| {
         cb.spawn((SpriteBundle {
             sprite: Sprite {
@@ -213,32 +214,4 @@ fn on_pressure_event(
         }
         // TODO click sound
     }
-}
-
-pub fn spawn_sign(
-    commands: &mut StateLocalSpawner<'_, '_>,
-    text: &str,
-    topleft: Vec2,
-    bottomright: Vec2,
-    text_styles: Res<TextStyles>,
-) {
-    commands
-        .spawn((Text2dBundle {
-            text: Text::from_section(text, text_styles.sign_text.clone())
-                .with_justify(JustifyText::Center),
-            transform: Transform::from_translation(topleft.midpoint(bottomright).extend(-0.2)),
-            ..default()
-        },))
-        .with_children(|cb| {
-            cb.spawn((SpriteBundle {
-                sprite: Sprite {
-                    color: SIGN_COLOR,
-                    custom_size: Some(Vec2::ONE),
-                    ..default()
-                },
-                transform: Transform::from_xyz(0.0, 0.0, -0.05)
-                    .with_scale((bottomright - topleft).abs().extend(1.0)),
-                ..default()
-            },));
-        });
 }

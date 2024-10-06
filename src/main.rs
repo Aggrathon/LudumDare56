@@ -1,6 +1,7 @@
 mod creature;
 mod levels;
 mod objects;
+mod ui;
 mod utils;
 
 use avian2d::{math::*, prelude::*};
@@ -12,8 +13,9 @@ fn main() {
             DefaultPlugins,
             PhysicsPlugins::default().with_length_unit(40.0),
             creature::CreaturePlugin,
-            levels::LevelPlugin,
             objects::ObjectPlugin,
+            ui::UiPlugin,
+            levels::LevelPlugin,
         ))
         .insert_resource(ClearColor(Color::srgb(0.15, 0.15, 0.25)))
         .insert_resource(Gravity(Vector::NEG_Y * 9.81 * 50.0))
