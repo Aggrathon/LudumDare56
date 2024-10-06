@@ -26,6 +26,9 @@ impl Plugin for LevelPlugin {
         .add_systems(OnEnter(Level::Tutorial3), setup_tutorial3)
         .add_systems(OnEnter(Level::Tutorial4), setup_tutorial4)
         .add_systems(OnEnter(Level::Tutorial5), setup_tutorial5)
+        .add_systems(OnEnter(Level::Level1), setup_level1)
+        .add_systems(OnEnter(Level::Level2), setup_level2)
+        .add_systems(OnEnter(Level::Level3), setup_level3)
         .add_systems(Update, (handle_input, level_events))
         .insert_state(Level::Loading);
     }
@@ -42,6 +45,9 @@ pub enum Level {
     Tutorial3,
     Tutorial4,
     Tutorial5,
+    Level1,
+    Level2,
+    Level3,
     // TODO Levels
 }
 
@@ -277,7 +283,7 @@ fn setup_tutorial3(commands: Commands, assets: Res<CreatureAssets>, text_styles:
     cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
     cmd.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -175.0)));
-    spawn_glass(&mut cmd, Vec2::new(200.0, -275.), 100.);
+    spawn_glass(&mut cmd, Vec2::new(200.0, -275.), 99.);
 
     spawn_exit(&mut cmd, Vec2::new(275.0, -275.0), 60.0, 0.0);
 
@@ -309,7 +315,7 @@ fn setup_tutorial4(commands: Commands, assets: Res<CreatureAssets>, text_styles:
     cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
     cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
 
-    cmd.spawn(wall(Vec2::new(175.0, -100.0), Vec2::new(225.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(175.0, -120.0), Vec2::new(225.0, -275.0)));
 
     spawn_exit(&mut cmd, Vec2::new(275.0, -275.0), 60.0, 0.0);
 
@@ -365,4 +371,74 @@ fn setup_tutorial5(commands: Commands, assets: Res<CreatureAssets>, text_styles:
 
     Creature::spawn(&mut cmd, 0., 0.0, Creature::Normal, true, &assets);
     Creature::spawn(&mut cmd, 250., 0., Creature::Bouncy, false, &assets);
+}
+
+fn setup_level1(commands: Commands, assets: Res<CreatureAssets>) {
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
+
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    cmd.spawn(plank(Vec2::new(-450.0, 100.0), Vec2::new(-300.0, 100.0)));
+
+    spawn_exit(&mut cmd, Vec2::new(-350.0, 100.0), 60.0, 0.0);
+
+    Creature::spawn(&mut cmd, -30., 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, 30., 0., Creature::Bouncy, false, &assets);
+    Creature::spawn(&mut cmd, -90., 0., Creature::Explosive, false, &assets);
+    Creature::spawn(&mut cmd, 90., 0., Creature::Heavy, false, &assets);
+}
+
+fn setup_level2(commands: Commands, assets: Res<CreatureAssets>) {
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
+
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    cmd.spawn(wall(Vec2::new(-450.0, -130.0), Vec2::new(-200.0, -275.0)));
+    spawn_pressure_plate(&mut cmd, Signal::Door(0), Vec2::new(-350., -130.), 60., 0.0);
+    spawn_glass(&mut cmd, Vec2::new(-310.0, -130.), 120.);
+
+    cmd.spawn(plank(Vec2::new(-450.0, 30.0), Vec2::new(-300.0, 30.0)));
+    spawn_pressure_plate(&mut cmd, Signal::Door(1), Vec2::new(-350., 30.), 60., 0.0);
+
+    cmd.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -175.0)));
+    cmd.spawn(door(0, Vec2::new(210., -275.), 100.));
+    cmd.spawn(door(1, Vec2::new(190., -275.), 100.));
+
+    spawn_exit(&mut cmd, Vec2::new(350.0, -275.0), 60.0, 0.0);
+
+    Creature::spawn(&mut cmd, 0., 0.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, 50., 0., Creature::Bouncy, false, &assets);
+    Creature::spawn(&mut cmd, -50., 0., Creature::Explosive, false, &assets);
+}
+
+fn setup_level3(commands: Commands, assets: Res<CreatureAssets>) {
+    let mut cmd = StateLocalSpawner(commands);
+    cmd.spawn(camera());
+
+    cmd.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    cmd.spawn(wall(Vec2::new(-450.0, 0.0), Vec2::new(-200.0, -50.0)));
+    cmd.spawn(wall(Vec2::new(-250.0, -50.0), Vec2::new(-200.0, -175.0)));
+    cmd.spawn(door(0, Vec2::new(-225., -275.), 100.));
+
+    cmd.spawn(wall(Vec2::new(100.0, 10.0), Vec2::new(120.0, -275.0)));
+    cmd.spawn(wall(Vec2::new(200.0, 10.0), Vec2::new(220.0, -275.0)));
+    spawn_pressure_plate(&mut cmd, Signal::Door(0), Vec2::new(160., -275.), 60., 0.0);
+
+    spawn_exit(&mut cmd, Vec2::new(-350.0, -275.0), 60.0, 0.0);
+
+    Creature::spawn(&mut cmd, -300., 10.0, Creature::Normal, true, &assets);
+    Creature::spawn(&mut cmd, -350., 10., Creature::Bouncy, false, &assets);
+    Creature::spawn(&mut cmd, -400., 10., Creature::Heavy, false, &assets);
 }

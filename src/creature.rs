@@ -82,7 +82,7 @@ impl Creature {
     }
 
     pub fn speed(self) -> f32 {
-        120.0
+        100.0
     }
 
     pub fn bounciness(self) -> f32 {
@@ -186,7 +186,7 @@ impl Creature {
             ColliderDensity(species.density()),
             Collider::circle(species.radius()),
             Restitution::new(species.bounciness()),
-            Friction::new(1.5),
+            Friction::new(2.5),
             species,
             Grounded(0),
         ));
@@ -326,6 +326,7 @@ fn on_collision_enter(
                 } else if o2.is_some() && o1.is_none() {
                     commands.entity(*e1).insert(SpreadControl {});
                 }
+                sounds.send(Sounds::Hello);
                 sounds.send(Sounds::Hello);
             } else {
                 groundeds

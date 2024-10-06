@@ -135,6 +135,7 @@ pub fn spawn_glass(commands: &mut StateLocalSpawner<'_, '_>, bottom: Vec2, heigh
             },
             RigidBody::Static,
             Collider::rectangle(1.0, 1.0),
+            ColliderDensity(0.5),
             Glass {},
         ));
     }
@@ -353,8 +354,8 @@ fn on_pressure_event(
                             commands.entity(e).insert(Sensor {});
                             *v = Visibility::Hidden;
                         } else {
-                            commands.entity(e).remove::<Sensor>();
-                            *v = Visibility::Inherited;
+                            // commands.entity(e).remove::<Sensor>();
+                            // *v = Visibility::Inherited;
                         }
                     }
                 }
