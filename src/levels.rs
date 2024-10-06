@@ -1,5 +1,5 @@
 use crate::creature::{Creature, CreatureAssets, Species};
-use crate::objects::{plank, wall};
+use crate::objects::{plank, spawn_pressure_plate, wall};
 use crate::utils::{IdentityTransitionsPlugin, StateLocalPlugin, StateLocalSpawner};
 use bevy::prelude::*;
 use enum_iterator::Sequence;
@@ -46,6 +46,9 @@ fn test_level(commands: Commands, assets: Res<CreatureAssets>) {
     commands.spawn(plank(Vec2::new(-300.0, 10.0), Vec2::new(-450.0, -10.0)));
     commands.spawn(plank(Vec2::new(250.0, 10.0), Vec2::new(300.0, 10.0)));
     commands.spawn(plank(Vec2::new(-250.0, 10.0), Vec2::new(-300.0, 10.0)));
+
+    spawn_pressure_plate(&mut commands, Vec2::new(275.0, 10.0), 40.0, 0.0);
+    spawn_pressure_plate(&mut commands, Vec2::new(-275.0, -275.0), 40.0, 0.0);
 
     let d = 30.0;
     Creature::spawn(&mut commands, -d * 3.0, 0.0, Species::Normal, &assets);

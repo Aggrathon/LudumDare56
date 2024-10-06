@@ -148,14 +148,14 @@ impl Creature {
                 MaterialMesh2dBundle {
                     mesh: mesh.clone().into(),
                     material: material.clone(),
-                    transform: Transform::from_xyz(x, y, 0.0),
+                    transform: Transform::from_xyz(x, y, 1.0),
                     ..default()
                 },
                 RigidBody::Dynamic,
                 ColliderDensity(species.density()),
                 Collider::circle(species.radius()),
                 Restitution::new(species.bounciness()),
-                Friction::new(1.1).with_dynamic_coefficient(0.9),
+                Friction::new(1.1),
                 Creature(species),
                 Grounded(0),
             ))
@@ -166,7 +166,7 @@ impl Creature {
                     transform: Transform::from_xyz(
                         species.radius() * 0.4,
                         species.radius() * 0.4,
-                        1.0,
+                        1.1,
                     ),
                     ..default()
                 });
@@ -176,7 +176,7 @@ impl Creature {
                     transform: Transform::from_xyz(
                         -species.radius() * 0.4,
                         species.radius() * 0.4,
-                        1.0,
+                        1.1,
                     ),
                     ..default()
                 });
