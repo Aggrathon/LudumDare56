@@ -155,7 +155,7 @@ impl Creature {
                 ColliderDensity(species.density()),
                 Collider::circle(species.radius()),
                 Restitution::new(species.bounciness()),
-                Friction::new(1.1),
+                Friction::new(1.5),
                 Creature(species),
                 Grounded(0),
             ))

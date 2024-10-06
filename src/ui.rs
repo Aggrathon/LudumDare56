@@ -93,7 +93,7 @@ pub fn spawn_sign(
     text: &str,
     topleft: Vec2,
     bottomright: Vec2,
-    text_styles: Res<TextStyles>,
+    text_styles: &Res<TextStyles>,
 ) {
     commands
         .spawn((Text2dBundle {

@@ -25,6 +25,17 @@ impl Plugin for ObjectPlugin {
     }
 }
 
+pub fn camera() -> impl Bundle {
+    Camera2dBundle {
+        projection: OrthographicProjection {
+            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(640.0),
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 0.0, 10.0),
+        ..default()
+    }
+}
+
 pub fn plank(start: Vec2, end: Vec2) -> impl Bundle {
     let angle = if end.x < start.x {
         f32::atan2(start.y - end.y, start.x - end.x)
@@ -74,7 +85,7 @@ pub fn background(
 ) -> impl Bundle {
     SpriteBundle {
         sprite: Sprite {
-            color: color,
+            color,
             custom_size: Some(Vec2::ONE),
             ..default()
         },
