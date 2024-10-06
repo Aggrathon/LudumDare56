@@ -42,7 +42,6 @@ pub enum Level {
     Tutorial3,
     Tutorial4,
     Tutorial5,
-    // TODO Tutorials
     // TODO Levels
 }
 

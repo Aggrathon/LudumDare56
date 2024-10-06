@@ -1,8 +1,9 @@
 use avian2d::prelude::*;
-use bevy::utils::hashbrown::HashMap;
+use bevy::utils::HashMap;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use enum_iterator::{all, Sequence};
 
+use crate::audio::Sounds;
 use crate::utils::StateLocalSpawner;
 
 const MAX_ANGULAR_VELOCITY: f32 = 15.0;
@@ -237,6 +238,7 @@ fn explode(
     joints: Query<(Entity, &FixedJoint)>,
     controls: Query<(Entity, Option<&MainCreature>), (With<Controlled>, With<Creature>)>,
     mouths: Query<(Entity, &Parent), With<Mouth>>,
+    mut sounds: EventWriter<Sounds>,
 ) {
     if keyboard_input.any_just_pressed([KeyCode::KeyS, KeyCode::ArrowDown]) {
         for (entity, joint) in joints.iter() {
@@ -256,6 +258,7 @@ fn explode(
             if o.is_some() {
                 commands.entity(e).insert(SpreadControl {});
             }
+            sounds.send(Sounds::Grunt);
         }
         for (e, p) in mouths.iter() {
             commands.entity(p.get()).remove_children(&[e]);
@@ -291,6 +294,7 @@ fn on_collision_enter(
     creatures: Query<(&GlobalTransform, &Creature, Option<&Controlled>)>,
     joints: Query<&FixedJoint>,
     mut groundeds: Query<&mut Grounded>,
+    mut sounds: EventWriter<Sounds>,
 ) {
     'outer: for CollisionStarted(e1, e2) in collision_event_reader.read() {
         if creatures.contains(*e1) {
@@ -322,7 +326,7 @@ fn on_collision_enter(
                 } else if o2.is_some() && o1.is_none() {
                     commands.entity(*e1).insert(SpreadControl {});
                 }
-                // TODO FX
+                sounds.send(Sounds::Hello);
             } else {
                 groundeds
                     .get_mut(*e1)

@@ -1,6 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
+use crate::audio::Sounds;
 use crate::creature::{Creature, MainCreature};
 use crate::ui::Signal;
 use crate::utils::StateLocalSpawner;
@@ -144,6 +145,7 @@ fn glass_collision(
     creatures: Query<(), With<Creature>>,
     mut glasses: Query<&mut RigidBody, With<Glass>>,
     joints: Query<&FixedJoint>,
+    mut sounds: EventWriter<Sounds>,
 ) {
     'outer: for CollisionStarted(e1, e2) in collision_event_reader.read() {
         if creatures.contains(*e1) {
@@ -151,6 +153,7 @@ fn glass_collision(
                 for joint in joints.iter() {
                     if joint.entity1 == *e1 || joint.entity2 == *e1 {
                         *rb = RigidBody::Dynamic;
+                        sounds.send(Sounds::Glass);
                         continue 'outer;
                     }
                 }
@@ -160,6 +163,7 @@ fn glass_collision(
                 for joint in joints.iter() {
                     if joint.entity1 == *e2 || joint.entity2 == *e2 {
                         *rb = RigidBody::Dynamic;
+                        sounds.send(Sounds::Glass);
                         continue 'outer;
                     }
                 }
@@ -335,6 +339,7 @@ fn on_pressure_event(
     children: Query<&Children>,
     mut transforms: Query<&mut Transform>,
     mut doors: Query<(Entity, &Door, &mut Visibility)>,
+    mut sounds: EventWriter<Sounds>,
 ) {
     for PressurePlateEvent(entity, signal, pressed) in event.read() {
         for child in children.iter_descendants(*entity) {
@@ -355,6 +360,6 @@ fn on_pressure_event(
                 }
             }
         }
-        // TODO click sound
+        sounds.send(Sounds::Click);
     }
 }
