@@ -1,6 +1,7 @@
 use crate::creature::{Creature, CreatureAssets, Species};
 use crate::objects::{
-    background, camera, plank, spawn_exit, spawn_pressure_plate, wall, PressurePlateEvent,
+    background, camera, plank, spawn_exit, spawn_glass, spawn_pressure_plate, wall,
+    PressurePlateEvent,
 };
 use crate::ui::{spawn_button, spawn_sign, Signal, TextStyles};
 use crate::utils::{IdentityTransitionsPlugin, StateLocalPlugin, StateLocalSpawner};
@@ -22,6 +23,7 @@ impl Plugin for LevelPlugin {
         .add_systems(OnEnter(Level::Menu), setup_main_menu)
         .add_systems(OnEnter(Level::Tutorial1), setup_tutorial1)
         .add_systems(OnEnter(Level::Tutorial2), setup_tutorial2)
+        .add_systems(OnEnter(Level::Tutorial3), setup_tutorial3)
         .add_systems(Update, (handle_input, level_events))
         .insert_state(Level::Loading);
     }
@@ -35,6 +37,7 @@ pub enum Level {
     Menu,
     Tutorial1,
     Tutorial2,
+    Tutorial3,
     // TODO Tutorials
     // TODO Levels
 }
@@ -190,6 +193,8 @@ fn setup_test_level(commands: Commands, assets: Res<CreatureAssets>, text_styles
         0.0,
     );
 
+    spawn_glass(&mut commands, Vec2::new(250.0, -275.), 80.);
+
     spawn_sign(
         &mut commands,
         "Press N to go to the next level",
@@ -261,4 +266,30 @@ fn setup_tutorial2(commands: Commands, assets: Res<CreatureAssets>, text_styles:
         &text_styles,
     );
     Creature::spawn(&mut commands, -150., 0.0, Species::Normal, &assets);
+}
+
+fn setup_tutorial3(commands: Commands, assets: Res<CreatureAssets>, text_styles: Res<TextStyles>) {
+    let mut commands = StateLocalSpawner(commands);
+    commands.spawn(camera());
+
+    commands.spawn(wall(Vec2::new(-500.0, 325.0), Vec2::new(500.0, 275.0)));
+    commands.spawn(wall(Vec2::new(-500.0, -325.0), Vec2::new(500.0, -275.0)));
+    commands.spawn(wall(Vec2::new(-500.0, 275.0), Vec2::new(-450.0, -275.0)));
+    commands.spawn(wall(Vec2::new(500.0, 275.0), Vec2::new(450.0, -275.0)));
+
+    commands.spawn(wall(Vec2::new(175.0, 275.0), Vec2::new(225.0, -175.0)));
+    spawn_glass(&mut commands, Vec2::new(200.0, -275.), 100.);
+
+    spawn_exit(&mut commands, Vec2::new(275.0, -275.0), 40.0, 0.0);
+
+    spawn_sign(
+        &mut commands,
+        "Ricky has always been a good\nfriend, maybe he can help?",
+        Vec2::new(-150., 100.),
+        Vec2::new(150., 20.),
+        &text_styles,
+    );
+
+    Creature::spawn(&mut commands, -50., 0.0, Species::Normal, &assets);
+    Creature::spawn(&mut commands, -250., 0.0, Species::Heavy, &assets);
 }

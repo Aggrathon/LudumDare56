@@ -8,10 +8,12 @@ use crate::utils::StateLocalSpawner;
 const PLANK_THICKNESS: f32 = 25.0;
 const SENSOR_THICKNESS: f32 = 6.0;
 const DOOR_HEIGHT: f32 = 50.0;
+const GLASS_THICKNESS: f32 = 8.0;
 
 const STATIC_COLOR: Color = Color::srgb(0.8, 0.75, 1.0);
 const SENSOR_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
 const DOOR_COLOR: Color = Color::srgba(1.0, 1.0, 0.0, 0.7);
+const GLASS_COLOR: Color = Color::srgba(0.7, 0.75, 1.0, 0.7);
 
 pub struct ObjectPlugin;
 
@@ -19,7 +21,12 @@ impl Plugin for ObjectPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_systems(
             Update,
-            (on_pressure_enter, on_pressure_exit, on_pressure_event),
+            (
+                on_pressure_enter,
+                on_pressure_exit,
+                on_pressure_event,
+                glass_collision,
+            ),
         )
         .add_event::<PressurePlateEvent>();
     }
@@ -74,6 +81,64 @@ pub fn rectangle(center: Vec2, size: Vec2, rotation: f32) -> impl Bundle {
         RigidBody::Static,
         Collider::rectangle(1.0, 1.0),
     )
+}
+
+#[derive(Component, Clone, Copy)]
+pub struct Glass {}
+
+pub fn spawn_glass(commands: &mut StateLocalSpawner<'_, '_>, bottom: Vec2, height: f32) {
+    let sprite = Sprite {
+        color: GLASS_COLOR,
+        custom_size: Some(Vec2::ONE),
+        ..default()
+    };
+    let size = Vec3::new(GLASS_THICKNESS, height / 3., 1.0);
+    for i in 0..3 {
+        commands.spawn((
+            SpriteBundle {
+                sprite: sprite.clone(),
+                transform: Transform::from_translation(Vec3::new(
+                    bottom.x,
+                    bottom.y + height * (1 + 2 * i) as f32 / 6.,
+                    0.0,
+                ))
+                .with_scale(size),
+                ..default()
+            },
+            RigidBody::Static,
+            Collider::rectangle(1.0, 1.0),
+            Glass {},
+        ));
+    }
+}
+
+fn glass_collision(
+    mut collision_event_reader: EventReader<CollisionStarted>,
+    creatures: Query<(), With<Creature>>,
+    mut glasses: Query<&mut RigidBody, With<Glass>>,
+    joints: Query<&FixedJoint>,
+) {
+    'outer: for CollisionStarted(e1, e2) in collision_event_reader.read() {
+        if creatures.contains(*e1) {
+            if let Ok(mut rb) = glasses.get_mut(*e2) {
+                for joint in joints.iter() {
+                    if joint.entity1 == *e1 || joint.entity2 == *e1 {
+                        *rb = RigidBody::Dynamic;
+                        continue 'outer;
+                    }
+                }
+            }
+        } else if creatures.contains(*e2) {
+            if let Ok(mut rb) = glasses.get_mut(*e1) {
+                for joint in joints.iter() {
+                    if joint.entity1 == *e2 || joint.entity2 == *e2 {
+                        *rb = RigidBody::Dynamic;
+                        continue 'outer;
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn background(
