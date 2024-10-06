@@ -2,7 +2,7 @@
 
 Help Tony and his friends escape the boredom of everyday life and go to the beach!
 
-A physics puzzler game.
+A physics puzzler game. Tip: the creatures have unique personalities.
 
 My entry to the 56:th Ludum Dare game jam (theme: *Tiny Creatures*), following the compo rules (alone, from scratch, 48 hours).
 
